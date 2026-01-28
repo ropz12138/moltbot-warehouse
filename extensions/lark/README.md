@@ -50,13 +50,10 @@ You should see `lark` with status `loaded`.
 
 4. Add the following permissions under Permissions & Scopes:
    - `im:message` - Send messages
-   - `im:message.receive_v1` - Receive messages
    - `im:chat:readonly` - Read chat info
    - `im:resource` - Upload images (required for image support)
 
-5. Configure Events & Callbacks:
-   - Add event subscription: `im.message.receive_v1`
-   - Set Request URL to your webhook endpoint (see Configuration below)
+5. Note your **App ID** and **App Secret** from Credentials & Basic Info (you'll need these for configuration)
 
 6. Publish your app under Version Management
 
@@ -73,10 +70,13 @@ clawdbot config set channels.lark.accounts.default.connectionMode 'webhook'
 # Optional settings
 clawdbot config set channels.lark.accounts.default.webhookPort 3000
 clawdbot config set channels.lark.accounts.default.domain 'lark'
-clawdbot config set channels.lark.accounts.default.encryptKey 'your-encrypt-key'
 clawdbot config set channels.lark.accounts.default.dmPolicy 'open'
 clawdbot config set channels.lark.accounts.default.groupPolicy 'open'
 clawdbot config set channels.lark.accounts.default.groupMentionGated false
+
+# Security settings (from Lark Developer Console > Events & Callbacks > Encryption Strategy)
+clawdbot config set channels.lark.accounts.default.encryptKey 'your-encrypt-key'
+clawdbot config set channels.lark.accounts.default.verificationToken 'your-verification-token'
 ```
 
 ### Using Environment Variables
@@ -86,8 +86,10 @@ For the default account, you can use environment variables:
 ```bash
 LARK_APP_ID=cli_xxxxx
 LARK_APP_SECRET=your-app-secret
-LARK_ENCRYPT_KEY=your-encrypt-key  # Optional
-LARK_VERIFICATION_TOKEN=your-token  # Optional
+
+# Security settings (from Lark Developer Console > Events & Callbacks > Encryption Strategy)
+LARK_ENCRYPT_KEY=your-encrypt-key          # Optional, for decrypting event payloads
+LARK_VERIFICATION_TOKEN=your-token         # Optional, for verifying request authenticity
 ```
 
 ### Configuration Options
@@ -99,8 +101,8 @@ LARK_VERIFICATION_TOKEN=your-token  # Optional
 | `connectionMode` | string | `websocket` | `webhook` or `websocket` |
 | `webhookPort` | number | `3000` | Port for webhook server |
 | `domain` | string | `lark` | `lark` (international) or `feishu` (China) |
-| `encryptKey` | string | - | Encrypt key for event verification |
-| `verificationToken` | string | - | Verification token for webhooks |
+| `encryptKey` | string | - | Encrypt key for decrypting event payloads (from Events & Callbacks > Encryption Strategy) |
+| `verificationToken` | string | - | Token for verifying request authenticity (from Events & Callbacks > Encryption Strategy) |
 | `dmPolicy` | string | `pairing` | `open`, `pairing`, or `allowlist` |
 | `groupPolicy` | string | `open` | `open`, `allowlist`, or `disabled` |
 | `groupMentionGated` | boolean | `true` | Require @mention in groups |
@@ -108,6 +110,13 @@ LARK_VERIFICATION_TOKEN=your-token  # Optional
 ## Webhook Mode Setup
 
 Webhook mode is recommended for individual Lark accounts.
+
+> **Security & Privacy Notice**: ngrok exposes your local server to the internet. Keep the following in mind:
+> - Never share your ngrok URL publicly — anyone with the URL can send requests to your local machine
+> - Use a paid ngrok plan with authentication or IP restrictions for production use
+> - Stop ngrok when not in use to close the tunnel
+> - Consider using Lark's `encryptKey` and `verificationToken` for additional request validation
+> - For production deployments, use a proper reverse proxy with HTTPS on your own infrastructure instead of ngrok
 
 1. Start ngrok to expose your local webhook server:
 
@@ -117,7 +126,9 @@ ngrok http 3000
 
 2. Copy the HTTPS URL from ngrok (e.g., `https://abc123.ngrok.io`)
 
-3. Configure this URL in Lark Developer Console under Events & Callbacks
+3. Configure Events & Callbacks in Lark Developer Console:
+   - Add event subscription: `im.message.receive_v1`
+   - Set Request URL to your ngrok HTTPS URL (e.g., `https://abc123.ngrok.io`)
 
 4. Start Clawdbot:
 
